@@ -1,167 +1,181 @@
-# Weft - Nitzat Haduvdevan Product Scraper
+# 🛒 Weft - Multi-Store Product Scraper
 
-A Node.js web scraper that extracts product information from [Nitzat Haduvdevan](https://www.nizat.com/) using Puppeteer and saves the data in JSON format.
+A collection of web scrapers for various online stores, built with Node.js and Puppeteer. Each scraper extracts product information and provides an interactive web viewer with images, search, and filtering capabilities.
 
 ## 🌐 Live Demo
 
-View the scraped products online: **[GitHub Pages Link]** (will be available after deployment)
+View all scraped products online: **https://lior88844.github.io/weft-scraper/**
 
-## Features
+## 📋 Available Stores
 
-- 🚀 Automated product scraping using Puppeteer
-- 📦 Extracts product names, prices, categories, URLs, and images
-- 🇮🇱 Handles Hebrew language content properly
-- 💾 Exports data to JSON format
-- ⏱️ Includes rate limiting to be respectful to the server
-- 🍪 Automatically handles cookie consent dialogs
+### 🌿 Nitzat Haduvdevan
+**Status:** ✅ Active  
+**URL:** https://www.nizat.com/  
+**Products:** 376 (as of last scrape)  
+**Description:** Organic and natural products store
 
-## Prerequisites
+[View Products](stores/nitzat-haduvdevan/index.html) | [Scraper README](stores/nitzat-haduvdevan/README.md)
 
-- Node.js (v14 or higher)
-- npm or yarn
+### 🏪 Additional Stores
+Coming soon... Add more stores by following the structure below.
 
-## Installation
+## 🚀 Project Structure
 
-1. Navigate to the project directory:
-```bash
-cd /Users/lior/development/Weft
+```
+Weft/
+├── index.html              # Main landing page with store navigation
+├── stores/                 # Individual store scrapers
+│   ├── nitzat-haduvdevan/
+│   │   ├── scraper.js     # Scraper script
+│   │   ├── package.json   # Dependencies
+│   │   ├── index.html     # Product viewer
+│   │   ├── data/          # Scraped data
+│   │   │   ├── products.json
+│   │   │   └── products.js
+│   │   └── README.md
+│   └── [future-stores]/
+└── README.md              # This file
 ```
 
-2. Install dependencies:
+## 🛠️ Adding a New Store
+
+1. Create a new folder under `stores/`:
 ```bash
+mkdir stores/your-store-name
+```
+
+2. Copy the template from an existing store:
+```bash
+cp -r stores/nitzat-haduvdevan/* stores/your-store-name/
+```
+
+3. Modify `scraper.js` with the new store's URL and selectors
+
+4. Update `index.html` to add the new store card with:
+   - Store name and icon
+   - Description
+   - Product count
+   - Link to `stores/your-store-name/index.html`
+
+5. Run the scraper:
+```bash
+cd stores/your-store-name
 npm install
-```
-
-This will install Puppeteer and all required dependencies (including Chromium browser).
-
-## Usage
-
-Run the scraper using one of these commands:
-
-```bash
 npm start
 ```
 
-or
+## 💻 Running Scrapers Locally
+
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation & Usage
+
+Navigate to a specific store and run:
 
 ```bash
-npm run scrape
-```
-
-or
-
-```bash
-node scraper.js
+cd stores/nitzat-haduvdevan
+npm install
+npm start
 ```
 
 The scraper will:
 1. Launch a headless browser
-2. Navigate to Nitzat Haduvdevan website
-3. Extract categories from the main menu
-4. Scrape products from each category
-5. Save the results to `data/products.json`
+2. Navigate to the store website
+3. Extract product information
+4. Save data to `data/products.json` and `data/products.js`
 
-## Output Format
+## 🌐 Viewing Results
 
-The scraper generates a JSON file in the `data/` directory with the following structure:
+### Option 1: Online (GitHub Pages)
+Visit: https://lior88844.github.io/weft-scraper/
 
+### Option 2: Local Web Server
+```bash
+# From project root
+python3 -m http.server 8000
+# Open http://localhost:8000/
+```
+
+### Option 3: Open Directly
+Simply open `index.html` in your browser (some features may require a web server)
+
+## 📊 Features
+
+- ✅ **Multi-store support** - Easily add new stores
+- ✅ **Product images** - 100% image capture rate
+- ✅ **Search & filter** - Find products quickly
+- ✅ **Category navigation** - Browse by category
+- ✅ **Price tracking** - Monitor product prices
+- ✅ **Responsive design** - Works on all devices
+- ✅ **Hebrew support** - Full RTL layout
+
+## 🔧 Configuration
+
+Each store's scraper can be configured by editing `scraper.js`:
+
+```javascript
+const CONFIG = {
+  baseUrl: 'https://example.com',
+  maxCategories: 10,        // Number of categories to scrape
+  delayBetweenRequests: 2000, // Delay in ms
+  headless: true,           // Run in headless mode
+  debug: false              // Enable debug mode
+};
+```
+
+## 📁 Output Format
+
+Each scraper generates:
+
+### `data/products.json`
 ```json
 {
-  "scrapedAt": "2025-11-22T10:30:00.000Z",
-  "totalProducts": 150,
+  "scrapedAt": "2025-11-22T10:00:00.000Z",
+  "totalProducts": 376,
   "products": [
     {
       "name": "Product Name",
       "price": "25.90",
-      "category": "Category Name",
-      "url": "/product/example",
-      "image": "https://example.com/image.jpg"
+      "category": "Category",
+      "url": "/product/link",
+      "image": "path/to/image.jpg"
     }
   ]
 }
 ```
 
-### Fields Description
+### `data/products.js`
+JavaScript version for web viewer (automatically generated)
 
-- `scrapedAt`: Timestamp of when the scraping was performed
-- `totalProducts`: Total number of products scraped
-- `products`: Array of product objects containing:
-  - `name`: Product name (string)
-  - `price`: Product price (string)
-  - `category`: Category name (string)
-  - `url`: Product page URL (string)
-  - `image`: Product image URL (string)
+## 🤝 Contributing
 
-## Configuration
+1. Fork the repository
+2. Add a new store under `stores/`
+3. Test the scraper locally
+4. Update the main `index.html` with the new store
+5. Submit a pull request
 
-You can modify the scraper settings by editing the `CONFIG` object in `scraper.js`:
+## ⚖️ Legal Notice
 
-```javascript
-const CONFIG = {
-  baseUrl: 'https://www.nizat.com',
-  outputDir: path.join(__dirname, 'data'),
-  outputFile: 'products.json',
-  delayBetweenRequests: 2000, // milliseconds
-  headless: true,
-  userAgent: '...'
-};
-```
+Please ensure you comply with each store's Terms of Service and robots.txt when using these scrapers. This tool is for educational and research purposes only. Always respect:
 
-### Configuration Options
+- Website terms of service
+- Rate limiting
+- robots.txt directives
+- Data privacy laws
 
-- `baseUrl`: The base URL of the website to scrape
-- `outputDir`: Directory where JSON output will be saved
-- `outputFile`: Name of the output JSON file
-- `delayBetweenRequests`: Delay between page requests (in milliseconds)
-- `headless`: Run browser in headless mode (true/false)
-- `userAgent`: Custom user agent string
-
-## Troubleshooting
-
-### Puppeteer Installation Issues
-
-If Puppeteer fails to download Chromium:
-
-```bash
-npm install puppeteer --unsafe-perm=true --allow-root
-```
-
-### Timeout Errors
-
-If you encounter timeout errors, try increasing the timeout value in the `page.goto()` calls in `scraper.js`.
-
-### Missing Products
-
-The scraper uses generic selectors to find products. If the website structure changes, you may need to update the selectors in the `page.evaluate()` function.
-
-## Notes
-
-- The scraper is configured to respect the server by including delays between requests
-- Currently limited to the first 5 categories for testing purposes (remove limit in line 98 of `scraper.js`)
-- The scraper handles Hebrew text encoding properly with UTF-8
-
-## Viewing Scraped Products
-
-### Option 1: Online Viewer (GitHub Pages)
-Open `index.html` in your browser or visit the GitHub Pages URL to see all scraped products with images, search, and filtering capabilities.
-
-### Option 2: Local Web Server
-```bash
-cd /Users/lior/development/Weft
-python3 -m http.server 8000
-```
-Then open: http://localhost:8000/
-
-### Product Data Files
-- `data/products.json` - Raw JSON data with all product information
-- `data/products.js` - JavaScript version for the web viewer
-- `index.html` - Interactive product viewer with images
-
-## Legal Notice
-
-Please ensure you comply with Nitzat Haduvdevan's Terms of Service and robots.txt when using this scraper. This tool is for educational purposes only.
-
-## License
+## 📝 License
 
 ISC
 
+## 👨‍💻 Author
+
+Created by [lior88844](https://github.com/lior88844)
+
+## 🔗 Links
+
+- **GitHub Repository:** https://github.com/lior88844/weft-scraper
+- **Live Demo:** https://lior88844.github.io/weft-scraper/
+- **Issues & Suggestions:** https://github.com/lior88844/weft-scraper/issues
