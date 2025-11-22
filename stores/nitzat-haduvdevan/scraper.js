@@ -10,7 +10,7 @@ const CONFIG = {
   delayBetweenRequests: 2000, // milliseconds
   headless: true,
   debug: false, // Set to true to save screenshots and see browser
-  maxCategories: 10, // Maximum number of categories to scrape (set to null for all)
+  maxCategories: 20, // Maximum number of categories to scrape (set to null for all)
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
@@ -119,14 +119,31 @@ async function scrapeNitzatHaduvdevan() {
 
     console.log(`✅ Found ${categories.length} potential categories/pages`);
 
-    // Scrape products from each category
-    const maxCategories = CONFIG.maxCategories || categories.length;
-    const categoriesToScrape = Math.min(categories.length, maxCategories);
+    // Filter categories - exclude fruits/vegetables, include snacks and dry goods
+    const excludeKeywords = ['פירות', 'ירקות', 'ירוקים', 'נבטים', 'ירקניה'];
+    const includeKeywords = ['חטיפ', 'דגנים', 'קטניות', 'פסטה', 'אגוז', 'זרעים', 'לחמים', 'מאפים', 
+                             'ממרח', 'שימור', 'בוקר', 'שוקולד', 'חומרי', 'אפייה', 'בישול',
+                             'תבלינים', 'קמח', 'שמן', 'סוכר', 'מלח', 'קקאו', 'קוקוס'];
+    
+    const filteredCategories = categories.filter(cat => {
+      const name = cat.name.toLowerCase();
+      // Exclude if contains exclude keywords
+      if (excludeKeywords.some(keyword => name.includes(keyword.toLowerCase()))) {
+        return false;
+      }
+      // Include if contains include keywords
+      return includeKeywords.some(keyword => name.includes(keyword.toLowerCase()));
+    });
+
+    console.log(`🔍 Filtered to ${filteredCategories.length} relevant categories (snacks & dry goods)`);
+    
+    const maxCategories = CONFIG.maxCategories || filteredCategories.length;
+    const categoriesToScrape = Math.min(filteredCategories.length, maxCategories);
     
     console.log(`\n🔄 Will scrape ${categoriesToScrape} categories...\n`);
     
     for (let i = 0; i < categoriesToScrape; i++) {
-      const category = categories[i];
+      const category = filteredCategories[i];
       console.log(`\n📦 Scraping category: ${category.name}`);
       
       try {

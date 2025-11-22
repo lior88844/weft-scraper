@@ -11,8 +11,9 @@ View all scraped products online: **https://lior88844.github.io/weft-scraper/**
 ### 🌿 Nitzat Haduvdevan
 **Status:** ✅ Active  
 **URL:** https://www.nizat.com/  
-**Products:** 376 (as of last scrape)  
-**Description:** Organic and natural products store
+**Products:** 1,325 (as of last scrape)  
+**Categories:** Snacks, nuts, grains, legumes, pasta, flour, spices, baking supplies  
+**Description:** Organic and natural dry goods and pantry staples
 
 [View Products](stores/nitzat-haduvdevan/index.html) | [Scraper README](stores/nitzat-haduvdevan/README.md)
 
