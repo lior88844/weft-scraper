@@ -32,3 +32,5 @@ Each product includes:
 - `url` - Product page URL
 - `image` - Product image path
 
+
+

@@ -1,0 +1,11 @@
+{
+  "mcp_servers": {
+    "weft": {
+      "url": "http://localhost:8547/mcp",
+      "name": "Weft Store",
+      "description": "Browse and order from Weft organic stores",
+      "transport": "http"
+    }
+  }
+}
+

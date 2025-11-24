@@ -5,7 +5,8 @@
   "main": "scraper.js",
   "scripts": {
     "start": "node scraper.js",
-    "scrape": "node scraper.js"
+    "scrape": "node scraper.js",
+    "serve": "npx http-server -p 8000 -o -c-1"
   },
   "keywords": [
     "scraper",
@@ -18,4 +19,6 @@
     "puppeteer": "^21.5.0"
   }
 }
+
+
 

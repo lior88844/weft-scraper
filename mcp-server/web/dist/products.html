@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weft Products</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f9fafb;
+            padding: 16px;
+            direction: rtl;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            background: #e5e7eb;
+            display: block;
+        }
+
+        .product-image-placeholder {
+            width: 100%;
+            height: 240px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+        }
+
+        .product-info {
+            padding: 16px;
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            min-height: 44px;
+        }
+
+        .product-price {
+            font-size: 20px;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 8px;
+        }
+
+        .product-category {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #dbeafe;
+            color: #1e40af;
+            margin-bottom: 12px;
+        }
+
+        .product-id {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .add-to-cart-btn {
+            width: 100%;
+            padding: 10px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .add-to-cart-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .add-to-cart-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .no-products {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+            font-size: 18px;
+        }
+
+        /* Skeleton loading animation */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .skeleton-image {
+            width: 100%;
+            height: 240px;
+        }
+
+        .skeleton-content {
+            padding: 16px;
+        }
+
+        .skeleton-text {
+            height: 16px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .skeleton-title {
+            height: 20px;
+            width: 80%;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .skeleton-price {
+            height: 24px;
+            width: 40%;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .skeleton-button {
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 640px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Start empty - will show loading only if data takes >300ms -->
+    </div>
+
+    <script type="module">
+        // Access data from ChatGPT
+        const getData = () => {
+            if (window.openai && window.openai.toolOutput) {
+                console.log('✓ Found toolOutput with', window.openai.toolOutput.products?.length || 0, 'products');
+                return window.openai.toolOutput;
+            }
+
+            console.error('No toolOutput found in window.openai');
+            return { products: [] };
+        };
+
+        function renderProducts() {
+            console.log('renderProducts called');
+            const data = getData();
+            const app = document.getElementById('app');
+
+            console.log('Rendering', data.products.length, 'products');
+
+            if (!data.products || data.products.length === 0) {
+                app.innerHTML = '<div class="no-products">לא נמצאו מוצרים</div>';
+                return;
+            }
+
+            const productsHTML = data.products.map(product => {
+                const imageHTML = product.image
+                    ? `<img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'>🌾</div>'">`
+                    : `<div class="product-image-placeholder">🌾</div>`;
+
+                return `
+                    <div class="product-card" data-product-id="${product.id}">
+                        ${imageHTML}
+                        <div class="product-info">
+                            <h3 class="product-name">${product.name}</h3>
+                            <div class="product-price">${product.price_formatted}</div>
+                            ${product.category ? `<div class="product-category">${product.category}</div>` : ''}
+                            <div class="product-id">${product.id}</div>
+                            <button
+                                class="add-to-cart-btn"
+                                onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\\'")}')">
+                                הוסף לעגלה
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            app.innerHTML = `<div class="products-grid">${productsHTML}</div>`;
+        }
+
+        // Function to communicate back to ChatGPT
+        window.addToCart = async (productId, productName) => {
+            const button = event?.target;
+            const originalText = button?.textContent;
+
+            try {
+                if (button) {
+                    button.disabled = true;
+                    button.textContent = 'מוסיף...';
+                }
+
+                if (window.openai?.callTool) {
+                    console.log('Calling add_to_cart tool for product:', productId);
+                    const result = await window.openai.callTool("add_to_cart", {
+                        product_id: productId,
+                        quantity: 1
+                    });
+                    console.log('Add to cart result:', result);
+
+                    if (button && !result.isError) {
+                        button.textContent = '✓ נוסף לעגלה!';
+                        button.style.background = '#10b981';
+
+                        if (window.openai?.sendFollowUpMessage && result.result) {
+                            window.openai.sendFollowUpMessage({
+                                prompt: result.result
+                            });
+                        }
+
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                            button.style.background = '';
+                            button.disabled = false;
+                        }, 2000);
+                    } else if (result.isError) {
+                        throw new Error(result.result || 'Failed to add to cart');
+                    }
+                } else if (window.openai?.sendFollowUpMessage) {
+                    console.log('Sending follow-up message for product:', productId);
+                    window.openai.sendFollowUpMessage({
+                        prompt: `הוסף לעגלה מוצר ${productId}`
+                    });
+
+                    if (button) {
+                        button.textContent = '✓ נשלח';
+                        button.style.background = '#10b981';
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                            button.style.background = '';
+                            button.disabled = false;
+                        }, 2000);
+                    }
+                } else {
+                    console.log('window.openai API not available. Product:', productId, productName);
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = originalText;
+                    }
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+
+                if (button) {
+                    button.textContent = '❌ שגיאה';
+                    button.style.background = '#ef4444';
+
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '';
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+        };
+
+        // Show skeleton loader
+        function showSkeletonLoader() {
+            const skeletonHTML = `
+                <div class="products-grid">
+                    ${Array(6).fill(0).map(() => `
+                        <div class="skeleton-card">
+                            <div class="skeleton-image skeleton"></div>
+                            <div class="skeleton-content">
+                                <div class="skeleton-title skeleton"></div>
+                                <div class="skeleton-price skeleton"></div>
+                                <div class="skeleton-text skeleton" style="width: 60%;"></div>
+                                <div class="skeleton-button skeleton"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            app.innerHTML = skeletonHTML;
+        }
+
+        // Start with blank state
+        console.log('Widget initialized - waiting for data...');
+        const app = document.getElementById('app');
+
+        let hasRendered = false;
+
+        // Show skeleton loader only if data takes longer than 300ms
+        const loadingTimeout = setTimeout(() => {
+            if (!hasRendered) {
+                console.log('Data taking a while, showing skeleton loader...');
+                showSkeletonLoader();
+            }
+        }, 300);
+
+        // Poll for data - keep checking until it arrives
+        const checkForData = setInterval(() => {
+            if (window.openai?.toolOutput?.products?.length > 0) {
+                console.log('✓ Data arrived! Rendering products...');
+                clearTimeout(loadingTimeout);
+                clearInterval(checkForData);
+                hasRendered = true;
+                renderProducts();
+            }
+        }, 500);
+    </script>
+</body>
+</html>
+
+

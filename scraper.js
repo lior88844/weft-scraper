@@ -11,6 +11,7 @@ const CONFIG = {
   headless: true,
   debug: false, // Set to true to save screenshots and see browser
   maxCategories: 20, // Maximum number of categories to scrape (set to null for all)
+  maxProducts: 100, // Maximum number of products to scrape (only products with images)
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
@@ -70,6 +71,7 @@ async function scrapeNitzatHaduvdevan() {
     }
 
     const allProducts = [];
+    const usedImages = new Set(); // Track images that have been used
 
     // Wait for content to load
     await page.waitForSelector('body', { timeout: 10000 });
@@ -140,11 +142,17 @@ async function scrapeNitzatHaduvdevan() {
     const maxCategories = CONFIG.maxCategories || filteredCategories.length;
     const categoriesToScrape = Math.min(filteredCategories.length, maxCategories);
     
-    console.log(`\n🔄 Will scrape ${categoriesToScrape} categories...\n`);
+    console.log(`\n🔄 Will scrape up to ${CONFIG.maxProducts} products with images from ${categoriesToScrape} categories...\n`);
     
     for (let i = 0; i < categoriesToScrape; i++) {
+      // Check if we've reached the product limit
+      if (allProducts.length >= CONFIG.maxProducts) {
+        console.log(`\n✅ Reached maximum of ${CONFIG.maxProducts} products. Stopping scrape.`);
+        break;
+      }
+      
       const category = filteredCategories[i];
-      console.log(`\n📦 Scraping category: ${category.name}`);
+      console.log(`\n📦 Scraping category: ${category.name} (${allProducts.length}/${CONFIG.maxProducts} products collected)`);
       
       try {
         // Construct full URL
@@ -482,20 +490,70 @@ async function scrapeNitzatHaduvdevan() {
           return uniqueProducts;
         }, category.name);
 
-        console.log(`   ✓ Found ${products.length} products in ${category.name}`);
-        allProducts.push(...products);
+        // Filter products to only include those with both image AND price
+        // Also exclude products with the default Nitzat logo image (placeholder)
+        const placeholderImages = [
+          'Q659875_80_40.png',  // Nitzat logo
+          'productsimages/mfrimages/thumbs/Q659875_80_40.png'
+        ];
+        
+        const completeProducts = products.filter(product => 
+          product.image && product.image.trim() !== '' &&
+          product.price && product.price.trim() !== '' &&
+          !placeholderImages.some(placeholder => product.image.includes(placeholder))
+        );
+        
+        // First, deduplicate within this category's products
+        const categoryUniqueProducts = [];
+        const categoryImages = new Set();
+        for (const product of completeProducts) {
+          if (!categoryImages.has(product.image) && !usedImages.has(product.image)) {
+            categoryImages.add(product.image);
+            categoryUniqueProducts.push(product);
+          }
+        }
+        
+        console.log(`   ✓ Found ${products.length} products in ${category.name} (${completeProducts.length} with complete data, ${categoryUniqueProducts.length} with unique images)`);
+        
+        // Add products up to the maximum limit and track their images
+        const remainingSlots = CONFIG.maxProducts - allProducts.length;
+        const productsToAdd = categoryUniqueProducts.slice(0, remainingSlots);
+        
+        // Track the images we're adding
+        productsToAdd.forEach(product => {
+          usedImages.add(product.image);
+        });
+        
+        allProducts.push(...productsToAdd);
+        
+        if (allProducts.length >= CONFIG.maxProducts) {
+          console.log(`   🎯 Reached maximum of ${CONFIG.maxProducts} products!`);
+        }
 
       } catch (error) {
         console.error(`   ✗ Error scraping category ${category.name}:`, error.message);
       }
     }
 
+    // Final deduplication pass - ensure absolutely no duplicate images
+    const finalProducts = [];
+    const finalUsedImages = new Set();
+    
+    for (const product of allProducts) {
+      if (!finalUsedImages.has(product.image)) {
+        finalUsedImages.add(product.image);
+        finalProducts.push(product);
+      }
+    }
+    
+    console.log(`\n🔍 Final deduplication: ${allProducts.length} → ${finalProducts.length} unique image products`);
+
     // Save results to JSON file
     const outputPath = path.join(CONFIG.outputDir, CONFIG.outputFile);
     const output = {
       scrapedAt: new Date().toISOString(),
-      totalProducts: allProducts.length,
-      products: allProducts
+      totalProducts: finalProducts.length,
+      products: finalProducts
     };
 
     fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
