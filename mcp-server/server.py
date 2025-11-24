@@ -25,6 +25,7 @@ PORT = int(os.getenv("PORT", "8547"))
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
 STORES_DIR = PROJECT_ROOT / "stores"
+DEFAULT_STORE = "nitzat-haduvdevan"
 WIDGET_DIR = Path(__file__).parent / "web" / "dist"
 WIDGET_MIME_TYPE = "text/html+skybridge"
 PRODUCTS_WIDGET_URI = "ui://widget/products.html"
@@ -33,7 +34,7 @@ PRODUCTS_WIDGET_URI = "ui://widget/products.html"
 user_carts = {}
 
 # Initialize MCP server
-mcp = FastMCP("Weft Store", port=PORT, host="0.0.0.0", stateless_http=True)
+mcp = FastMCP("Nitzat Haduvdevan Store", port=PORT, host="0.0.0.0", stateless_http=True)
 
 
 def load_store_products(store_name: str) -> List[Dict]:
@@ -54,16 +55,15 @@ def load_store_products(store_name: str) -> List[Dict]:
 
 
 def get_available_stores() -> List[str]:
-    """Get list of available stores"""
+    """Get list of available stores (restricted to Nitzat Haduvdevan)"""
     if not STORES_DIR.exists():
         return []
     
-    stores = []
-    for store_dir in STORES_DIR.iterdir():
-        if store_dir.is_dir() and (store_dir / "data" / "products.json").exists():
-            stores.append(store_dir.name)
+    store_path = STORES_DIR / DEFAULT_STORE / "data" / "products.json"
+    if store_path.exists():
+        return [DEFAULT_STORE]
     
-    return stores
+    return []
 
 
 def transform_product_to_mcp_format(product: Dict, index: int, store_name: str) -> Dict:
@@ -166,7 +166,7 @@ async def list_tools() -> List[types.Tool]:
         types.Tool(
             name="list_stores",
             title="List Stores",
-            description="List all available stores in Weft",
+            description="List the available Weft store (Nitzat Haduvdevan)",
             inputSchema={
                 "type": "object",
                 "properties": {},
@@ -176,24 +176,18 @@ async def list_tools() -> List[types.Tool]:
         types.Tool(
             name="search_products",
             title="Search Products",
-            description="""Search for products across all stores or in a specific store.
+            description="""Search for Nitzat Haduvdevan products.
             
             You can search by:
             - Product name (Hebrew or English)
             - Category (e.g., 'דגנים', 'אגוזים', 'קטניות')
-            - Use empty search to see all products
-            
-            Optionally filter by store name (e.g., 'nitzat-haduvdevan')""",
+            - Use empty search to see all products""",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "search": {
                         "type": "string", 
                         "description": "Search query to filter products. Empty string shows all products."
-                    },
-                    "store": {
-                        "type": "string",
-                        "description": "Optional: specific store name to search in (e.g., 'nitzat-haduvdevan')"
                     },
                     "category": {
                         "type": "string",
@@ -263,33 +257,46 @@ async def list_tools() -> List[types.Tool]:
 
 # Tool implementation functions
 def list_stores_func() -> str:
-    """List all available stores"""
+    """List all available stores (single store deployment)"""
     stores = get_available_stores()
     
     if not stores:
-        return "לא נמצאו חנויות זמינות"
+        return "לא נמצאה חנות נתמכת. ודא שקיים קובץ data/products.json תחת stores/nitzat-haduvdevan."
     
-    result = ["🏪 **חנויות זמינות:**\n"]
-    for store in stores:
-        # Load product count
-        products = load_store_products(store)
-        count = len(products)
-        
-        # Format store name nicely
-        display_name = store.replace('-', ' ').title()
-        result.append(f"• **{display_name}**")
-        result.append(f"  מוצרים: {count}\n")
-    
-    return "\n".join(result)
+    products = load_store_products(DEFAULT_STORE)
+    count = len(products)
+    return f"🏪 **חנויות זמינות:**\n• **Nitzat Haduvdevan**\n  מוצרים: {count}\n"
 
 
 def search_products(search: str = "", store: str = None, category: str = None) -> types.CallToolResult:
-    """Search for products in Weft stores"""
+    """Search for products in the Nitzat Haduvdevan store"""
     logger.info(f"search_products called with search='{search}', store='{store}', category='{category}'")
     
     try:
         all_products = []
-        stores_to_search = [store] if store else get_available_stores()
+        stores_to_search = get_available_stores()
+
+        if store and store != DEFAULT_STORE:
+            return types.CallToolResult(
+                content=[
+                    types.TextContent(
+                        type="text",
+                        text="ניתן לחפש רק בחנות Nitzat Haduvdevan בממשק זה."
+                    )
+                ],
+                structuredContent={"products": []}
+            )
+        
+        if not stores_to_search:
+            return types.CallToolResult(
+                content=[
+                    types.TextContent(
+                        type="text",
+                        text="חנות Nitzat Haduvdevan אינה זמינה (חסר קובץ products.json)."
+                    )
+                ],
+                structuredContent={"products": []}
+            )
         
         for store_name in stores_to_search:
             products = load_store_products(store_name)

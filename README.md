@@ -35,6 +35,14 @@ Weft/
 │   │   │   └── products.js
 │   │   └── README.md
 │   └── [future-stores]/
+├── mcp-server/            # 🆕 ChatGPT MCP integration
+│   ├── server.py          # MCP server
+│   ├── requirements.txt   # Python dependencies
+│   ├── test_setup.py      # Setup validation script
+│   ├── web/
+│   │   └── dist/
+│   │       └── products.html  # Product widget
+│   └── README.md
 └── README.md              # This file
 ```
 
@@ -102,6 +110,27 @@ python3 -m http.server 8000
 ### Option 3: Open Directly
 Simply open `index.html` in your browser (some features may require a web server)
 
+## 🤖 NEW: ChatGPT Integration (MCP Server)
+
+**Shop with AI!** Browse and order from Weft stores directly through ChatGPT using our MCP server.
+
+```bash
+cd mcp-server
+python3 test_setup.py  # Test your setup
+python3 server.py      # Start the server
+```
+
+**Example ChatGPT conversation:**
+- "Show me all quinoa products"
+- "Add organic rice to my cart"
+- "What's in my cart?"
+
+📖 [Full MCP Server Documentation](mcp-server/README.md)
+
+**Requirements:**
+- Python 3.10+ (for fastmcp)
+- ChatGPT Plus account
+
 ## 📊 Features
 
 - ✅ **Multi-store support** - Easily add new stores
@@ -111,6 +140,7 @@ Simply open `index.html` in your browser (some features may require a web server
 - ✅ **Price tracking** - Monitor product prices
 - ✅ **Responsive design** - Works on all devices
 - ✅ **Hebrew support** - Full RTL layout
+- 🆕 **ChatGPT integration** - Shop through AI conversation
 
 ## 🔧 Configuration
 

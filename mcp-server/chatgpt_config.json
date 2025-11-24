@@ -1,9 +1,9 @@
 {
   "mcp_servers": {
-    "weft": {
+    "nitzat-haduvdevan": {
       "url": "http://localhost:8547/mcp",
-      "name": "Weft Store",
-      "description": "Browse and order from Weft organic stores",
+      "name": "Nitzat Haduvdevan Store",
+      "description": "Browse and order from Nitzat Haduvdevan products",
       "transport": "http"
     }
   }
