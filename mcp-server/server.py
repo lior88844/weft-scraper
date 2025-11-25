@@ -71,11 +71,13 @@ def transform_product_to_mcp_format(product: Dict, index: int, store_name: str) 
     # Create unique ID combining store name and index
     product_key = f"{store_name}:{index}"
     
-    # Build full image URL (assuming relative to store directory)
+    # Build full image URL from Nitzat Haduvdevan website
     image_url = product.get('image', '')
     if image_url and not image_url.startswith('http'):
-        # Construct path relative to GitHub Pages or local server
-        image_url = f"stores/{store_name}/{image_url}"
+        # Remove leading slash if present
+        image_url = image_url.lstrip('/')
+        # Construct full URL to Nitzat Haduvdevan website
+        image_url = f"https://www.nitzathaduvdevan.co.il/{image_url}"
     
     return {
         "id": product_key,
