@@ -183,71 +183,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        .products-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .products-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            color: #1f2937;
-        }
-
-        .results-count {
-            font-weight: 600;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .page-numbers {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .page-button {
-            border: none;
-            background: #e5e7eb;
-            color: #1f2937;
-            padding: 8px 14px;
-            border-radius: 999px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .page-button:hover:not(:disabled) {
-            background: #d1d5db;
-        }
-
-        .page-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .page-button.active {
-            background: #2563eb;
-            color: white;
-        }
-
-        .pagination-summary {
-            font-size: 14px;
-            color: #6b7280;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -256,14 +191,11 @@
     </div>
 
     <script type="module">
-        let latestData = null;
-
         // Access data from ChatGPT
         const getData = () => {
             if (window.openai && window.openai.toolOutput) {
-                latestData = window.openai.toolOutput;
-                console.log('✓ Found toolOutput with', latestData.products?.length || 0, 'products');
-                return latestData;
+                console.log('✓ Found toolOutput with', window.openai.toolOutput.products?.length || 0, 'products');
+                return window.openai.toolOutput;
             }
 
             console.error('No toolOutput found in window.openai');
@@ -274,23 +206,15 @@
             console.log('renderProducts called');
             const data = getData();
             const app = document.getElementById('app');
-            const products = data.products || [];
-            const pagination = data.pagination || {};
 
-            console.log('Rendering', products.length, 'products');
+            console.log('Rendering', data.products.length, 'products');
 
-            if (!products || products.length === 0) {
+            if (!data.products || data.products.length === 0) {
                 app.innerHTML = '<div class="no-products">לא נמצאו מוצרים</div>';
                 return;
             }
 
-            const currentPage = pagination.currentPage || 1;
-            const pageSize = pagination.pageSize || products.length;
-            const totalProducts = pagination.totalProducts ?? products.length;
-            const startIndex = totalProducts === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
-            const endIndex = Math.min(totalProducts, startIndex + products.length - 1);
-
-            const productsHTML = products.map(product => {
+            const productsHTML = data.products.map(product => {
                 const imageHTML = product.image
                     ? `<img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'>🌾</div>'">`
                     : `<div class="product-image-placeholder">🌾</div>`;
@@ -313,21 +237,7 @@
                 `;
             }).join('');
 
-            const paginationHTML = renderPaginationControls(pagination);
-            const summaryText = totalProducts
-                ? `מציג ${startIndex}–${endIndex} מתוך ${totalProducts} מוצרים`
-                : '';
-
-            app.innerHTML = `
-                <div class="products-layout">
-                    <div class="products-header">
-                        <div class="results-count">${summaryText}</div>
-                        ${pagination.totalPages > 1 ? `<div>עמוד ${currentPage} מתוך ${pagination.totalPages}</div>` : ''}
-                    </div>
-                    <div class="products-grid">${productsHTML}</div>
-                    ${paginationHTML}
-                </div>
-            `;
+            app.innerHTML = `<div class="products-grid">${productsHTML}</div>`;
         }
 
         // Function to communicate back to ChatGPT
@@ -405,84 +315,6 @@
             }
         };
 
-        function renderPaginationControls(pagination) {
-            const totalPages = pagination.totalPages || 1;
-            if (totalPages <= 1) return '';
-
-            const currentPage = pagination.currentPage || 1;
-            const pageRange = getPageRange(currentPage, totalPages);
-
-            return `
-                <div class="pagination">
-                    <button class="page-button" ${!pagination.hasPrev ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
-                        הקודם
-                    </button>
-                    <div class="page-numbers">
-                        ${pageRange.map(pageNum => `
-                            <button
-                                class="page-button ${pageNum === currentPage ? 'active' : ''}"
-                                onclick="changePage(${pageNum})"
-                                ${pageNum === currentPage ? 'disabled' : ''}>
-                                ${pageNum}
-                            </button>
-                        `).join('')}
-                    </div>
-                    <button class="page-button" ${!pagination.hasNext ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
-                        הבא
-                    </button>
-                </div>
-                <div class="pagination-summary">
-                    דפדף בין העמודים כדי לראות את כל המוצרים
-                </div>
-            `;
-        }
-
-        function getPageRange(currentPage, totalPages, maxButtons = 5) {
-            const half = Math.floor(maxButtons / 2);
-            let start = Math.max(1, currentPage - half);
-            let end = Math.min(totalPages, start + maxButtons - 1);
-
-            if (end - start + 1 < maxButtons) {
-                start = Math.max(1, end - maxButtons + 1);
-            }
-
-            const pages = [];
-            for (let i = start; i <= end; i++) {
-                pages.push(i);
-            }
-            return pages;
-        }
-
-        window.changePage = async (targetPage) => {
-            if (!latestData) return;
-            const pagination = latestData.pagination || {};
-            const filters = latestData.filters || {};
-            const totalPages = pagination.totalPages || 1;
-            const currentPage = pagination.currentPage || 1;
-            const pageSize = pagination.pageSize || 12;
-
-            if (targetPage < 1 || targetPage > totalPages || targetPage === currentPage) {
-                return;
-            }
-
-            try {
-                if (window.openai?.callTool) {
-                    await window.openai.callTool("search_products", {
-                        search: filters.search || "",
-                        category: filters.category || "",
-                        page: targetPage,
-                        page_size: pageSize,
-                    });
-                } else if (window.openai?.sendFollowUpMessage) {
-                    window.openai.sendFollowUpMessage({
-                        prompt: `הצג עמוד ${targetPage} של תוצאות המוצרים`
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to change page:', error);
-            }
-        };
-
         // Show skeleton loader
         function showSkeletonLoader() {
             const skeletonHTML = `
@@ -519,7 +351,7 @@
 
         // Poll for data - keep checking until it arrives
         const checkForData = setInterval(() => {
-            if (window.openai?.toolOutput) {
+            if (window.openai?.toolOutput?.products?.length > 0) {
                 console.log('✓ Data arrived! Rendering products...');
                 clearTimeout(loadingTimeout);
                 clearInterval(checkForData);

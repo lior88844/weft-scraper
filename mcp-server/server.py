@@ -6,7 +6,6 @@ Enables browsing and ordering from Weft stores via ChatGPT
 
 import os
 import json
-import math
 import logging
 from typing import List, Dict, Any
 from pathlib import Path
@@ -243,17 +242,6 @@ async def list_tools() -> List[types.Tool]:
                     "category": {
                         "type": "string",
                         "description": "Optional: filter by category"
-                    },
-                    "page": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "description": "Page number (1 = first page)"
-                    },
-                    "page_size": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 50,
-                        "description": "How many products per page (default 12, max 50)"
                     }
                 },
                 "required": ["search"]
@@ -323,21 +311,6 @@ async def list_tools() -> List[types.Tool]:
                 "properties": {},
                 "required": []
             }
-        ),
-        types.Tool(
-            name="debug_session",
-            title="Debug Session",
-            description="Display session information and cart statistics (for debugging)",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": []
-            },
-            annotations={
-                "destructiveHint": False,
-                "openWorldHint": False,
-                "readOnlyHint": True,
-            }
         )
     ]
 
@@ -355,32 +328,13 @@ def list_stores_func() -> str:
     return f"🏪 **חנויות זמינות:**\n• **Nitzat Haduvdevan**\n  מוצרים: {count}\n"
 
 
-def search_products(
-    search: str = "",
-    store: str = None,
-    category: str = None,
-    page: int = 1,
-    page_size: int = 12,
-) -> types.CallToolResult:
+def search_products(search: str = "", store: str = None, category: str = None) -> types.CallToolResult:
     """Search for products in the Nitzat Haduvdevan store"""
-    logger.info(
-        "search_products called with search='%s', store='%s', category='%s', page=%s, page_size=%s",
-        search,
-        store,
-        category,
-        page,
-        page_size,
-    )
+    logger.info(f"search_products called with search='{search}', store='{store}', category='{category}'")
     
     try:
         all_products = []
         stores_to_search = get_available_stores()
-        filters_meta = {
-            "search": search or "",
-            "category": category or "",
-        }
-        page_size = max(1, min(page_size or 12, 50))
-        page = max(1, page or 1)
 
         if store and store != DEFAULT_STORE:
             return types.CallToolResult(
@@ -390,18 +344,7 @@ def search_products(
                         text="ניתן לחפש רק בחנות Nitzat Haduvdevan בממשק זה."
                     )
                 ],
-                structuredContent={
-                    "products": [],
-                    "pagination": {
-                        "currentPage": 1,
-                        "totalPages": 1,
-                        "pageSize": page_size,
-                        "totalProducts": 0,
-                        "hasNext": False,
-                        "hasPrev": False,
-                    },
-                    "filters": filters_meta,
-                }
+                structuredContent={"products": []}
             )
         
         if not stores_to_search:
@@ -412,18 +355,7 @@ def search_products(
                         text="חנות Nitzat Haduvdevan אינה זמינה (חסר קובץ products.json)."
                     )
                 ],
-                structuredContent={
-                    "products": [],
-                    "pagination": {
-                        "currentPage": 1,
-                        "totalPages": 1,
-                        "pageSize": page_size,
-                        "totalProducts": 0,
-                        "hasNext": False,
-                        "hasPrev": False,
-                    },
-                    "filters": filters_meta,
-                }
+                structuredContent={"products": []}
             )
         
         for store_name in stores_to_search:
@@ -449,31 +381,12 @@ def search_products(
                         text="לא נמצאו מוצרים התואמים לחיפוש"
                     )
                 ],
-                structuredContent={
-                    "products": [],
-                    "pagination": {
-                        "currentPage": 1,
-                        "totalPages": 1,
-                        "pageSize": page_size,
-                        "totalProducts": 0,
-                        "hasNext": False,
-                        "hasPrev": False,
-                    },
-                    "filters": filters_meta,
-                }
+                structuredContent={"products": []}
             )
         
-        total_products = len(all_products)
-        total_pages = max(1, math.ceil(total_products / page_size))
-        if page > total_pages:
-            page = total_pages
-        start = (page - 1) * page_size
-        end = start + page_size
-        page_products = all_products[start:end]
-
-        # Format for text output (current page)
+        # Format for text output
         text_result = []
-        for product in page_products:
+        for product in all_products:
             text_result.append(
                 f"• {product['name']}\n"
                 f"  מחיר: {product['price_formatted']}\n"
@@ -481,33 +394,16 @@ def search_products(
                 f"  מזהה: {product['id']}"
             )
         
-        logger.info(f"Returning {len(page_products)} products for page {page}/{total_pages} (total {total_products})")
+        logger.info(f"Returning {len(all_products)} products")
         
         return types.CallToolResult(
             content=[
                 types.TextContent(
                     type="text",
-                    text=(
-                        f"נמצאו {total_products} מוצרים "
-                        f"(עמוד {page} מתוך {total_pages}):\n\n" + "\n\n".join(text_result[:10])
-                    )
+                    text=f"נמצאו {len(all_products)} מוצרים:\n\n" + "\n\n".join(text_result[:10])
                 )
             ],
-            structuredContent={
-                "products": page_products,
-                "pagination": {
-                    "currentPage": page,
-                    "totalPages": total_pages,
-                    "pageSize": page_size,
-                    "totalProducts": total_products,
-                    "hasNext": page < total_pages,
-                    "hasPrev": page > 1,
-                },
-                "filters": {
-                    "search": search or "",
-                    "category": category or "",
-                },
-            }
+            structuredContent={"products": all_products}
         )
     
     except Exception as e:
@@ -519,19 +415,7 @@ def search_products(
                     text=f"שגיאה בחיפוש מוצרים: {str(e)}"
                 )
             ],
-            structuredContent={
-                "products": [],
-                "pagination": {
-                    "currentPage": 1,
-                    "totalPages": 1,
-                    "pageSize": page_size if 'page_size' in locals() else 12,
-                    "totalProducts": 0,
-                    "hasNext": False,
-                    "hasPrev": False,
-                },
-                "filters": {"search": search or "", "category": category or ""},
-                "error": str(e),
-            }
+            structuredContent={"products": [], "error": str(e)}
         )
 
 
@@ -678,44 +562,6 @@ async def clear_cart(ctx: Context) -> str:
     return "✓ העגלה נוקתה"
 
 
-async def debug_session(ctx: Context) -> str:
-    """Debug session information and cart statistics"""
-    session_id = ctx.session_id
-    
-    result = ["🔍 **Session Debug Information**\n"]
-    result.append(f"**Current Session ID:** `{session_id}`\n")
-    
-    # Total sessions tracked
-    total_sessions = len(user_carts)
-    result.append(f"**Total Active Sessions:** {total_sessions}\n")
-    
-    # Current session cart
-    if session_id in user_carts and user_carts[session_id]:
-        items_count = len(user_carts[session_id])
-        total = sum(
-            float(item['product']['price']) * item['quantity']
-            for item in user_carts[session_id].values()
-        )
-        result.append(f"**Items in Your Cart:** {items_count}")
-        result.append(f"**Your Cart Total:** {total:.2f} ₪\n")
-    else:
-        result.append("**Your Cart:** Empty\n")
-    
-    # Other sessions (for debugging)
-    if total_sessions > 1:
-        result.append("**Other Active Sessions:**")
-        for sid in user_carts:
-            if sid != session_id and user_carts[sid]:
-                items = len(user_carts[sid])
-                result.append(f"  - Session `{sid[:8]}...`: {items} items")
-        result.append("")
-    
-    result.append("ℹ️ *Each chat conversation should have a unique session ID.*")
-    result.append("*If multiple chats share the same ID, they'll share a cart.*")
-    
-    return "\n".join(result)
-
-
 # Tool call request handler
 async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
     """Route tool calls to appropriate handlers"""
@@ -725,35 +571,8 @@ async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
     logger.info(f"handle_call_tool called: {tool_name}")
     logger.info(f"Arguments: {arguments}")
     
-    # Extract session_id - try multiple sources for better ChatGPT compatibility
-    session_id = None
-    
-    # Debug: Log what we're receiving
-    logger.info(f"Request params type: {type(req.params)}")
-    logger.info(f"Request params _meta: {getattr(req.params, '_meta', 'NO _META ATTRIBUTE')}")
-    if hasattr(req, '_meta'):
-        logger.info(f"Request _meta: {req._meta}")
-    
-    # Try to get from request params metadata (ChatGPT should send this)
-    if hasattr(req.params, '_meta') and req.params._meta:
-        session_id = req.params._meta.get('sessionId') or req.params._meta.get('conversationId')
-        if session_id:
-            logger.info(f"Found session ID in params._meta: {session_id}")
-    
-    # Try to get from request metadata
-    if not session_id and hasattr(req, '_meta') and req._meta:
-        session_id = req._meta.get('sessionId') or req._meta.get('conversationId')
-        if session_id:
-            logger.info(f"Found session ID in req._meta: {session_id}")
-    
-    # Fallback: Use a default session (not ideal but better than crashing)
-    if not session_id:
-        session_id = "default"
-        logger.warning(f"⚠️  No session ID provided by ChatGPT! All chats will share the same cart.")
-        logger.warning(f"⚠️  Using fallback session ID: {session_id}")
-    else:
-        logger.info(f"✓ Using session ID: {session_id}")
-    
+    # Extract session_id
+    session_id = getattr(req.params, '_meta', {}).get('sessionId') or "default"
     logger.info(f"Session ID: {session_id}")
     
     try:
@@ -769,15 +588,7 @@ async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
             search = arguments.get("search", "")
             store = arguments.get("store")
             category = arguments.get("category")
-            page = arguments.get("page", 1)
-            page_size = arguments.get("page_size", 12)
-            result = search_products(
-                search=search,
-                store=store,
-                category=category,
-                page=page,
-                page_size=page_size,
-            )
+            result = search_products(search=search, store=store, category=category)
             return types.ServerResult(result)
         
         elif tool_name == "add_to_cart":
@@ -814,16 +625,6 @@ async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
             from types import SimpleNamespace
             ctx = SimpleNamespace(session_id=session_id)
             result = await clear_cart(ctx)
-            return types.ServerResult(
-                types.CallToolResult(
-                    content=[types.TextContent(type="text", text=result)]
-                )
-            )
-        
-        elif tool_name == "debug_session":
-            from types import SimpleNamespace
-            ctx = SimpleNamespace(session_id=session_id)
-            result = await debug_session(ctx)
             return types.ServerResult(
                 types.CallToolResult(
                     content=[types.TextContent(type="text", text=result)]
