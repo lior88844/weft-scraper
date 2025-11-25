@@ -308,7 +308,7 @@
         // Load products from JSON
         async function loadProducts() {
             try {
-                const response = await fetch('../stores/nitzat-haduvdevan/data/products.json');
+                const response = await fetch('./stores/nitzat-haduvdevan/data/products.json');
                 const data = await response.json();
                 allProducts = data.products || [];
                 

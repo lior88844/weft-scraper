@@ -500,9 +500,26 @@ async function scrapeNitzatHaduvdevan() {
 
     fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
     
+    // Also save as JavaScript file for direct inclusion
+    const jsOutputPath = path.join(CONFIG.outputDir, 'products.js');
+    const jsContent = `const productsData = \n${JSON.stringify(output, null, 2)}`;
+    fs.writeFileSync(jsOutputPath, jsContent, 'utf-8');
+    
+    // Copy to docs folder for GitHub Pages
+    const docsDir = path.join(__dirname, '..', '..', 'docs', 'stores', 'nitzat-haduvdevan', 'data');
+    if (!fs.existsSync(docsDir)) {
+      fs.mkdirSync(docsDir, { recursive: true });
+    }
+    const docsJsonPath = path.join(docsDir, CONFIG.outputFile);
+    const docsJsPath = path.join(docsDir, 'products.js');
+    fs.copyFileSync(outputPath, docsJsonPath);
+    fs.copyFileSync(jsOutputPath, docsJsPath);
+    
     console.log(`\n✅ Scraping completed!`);
     console.log(`📊 Total products scraped: ${allProducts.length}`);
     console.log(`💾 Data saved to: ${outputPath}`);
+    console.log(`📋 JavaScript file: ${jsOutputPath}`);
+    console.log(`🌐 Copied to docs for GitHub Pages: ${docsJsonPath}`);
 
   } catch (error) {
     console.error('❌ Error during scraping:', error);
