@@ -2,4 +2,3 @@ fastmcp
 httpx
 python-dotenv
 mcp
-

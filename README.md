@@ -1,10 +1,17 @@
 # 🛒 Weft - Multi-Store Product Scraper
 
-A collection of web scrapers for various online stores, built with Node.js and Puppeteer. Each scraper extracts product information and provides an interactive web viewer with images, search, and filtering capabilities.
+A powerful product catalog system with **local scraping**, **web viewing**, and **ChatGPT integration**. 
+
+## 🎯 Three-Part Architecture
+
+1. **🖥️ Local Scraping** - Run scrapers on your computer to extract fresh data
+2. **🌐 GitHub Pages** - Beautiful web viewer for your team (Free!)
+3. **🤖 Railway MCP** - ChatGPT integration for AI-powered shopping ($5/month)
 
 ## 🌐 Live Demo
 
-View all scraped products online: **https://lior88844.github.io/weft-scraper/**
+View all products: **[https://YOUR-USERNAME.github.io/Weft/](https://YOUR-USERNAME.github.io/Weft/)**  
+ChatGPT MCP: **`https://your-app.railway.app/mcp`**
 
 ## 📋 Available Stores
 
@@ -73,63 +80,93 @@ npm install
 npm start
 ```
 
-## 💻 Running Scrapers Locally
+## 🚀 Quick Start
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-
-### Installation & Usage
-
-Navigate to a specific store and run:
+### 1. Run Scraper Locally
 
 ```bash
-cd stores/nitzat-haduvdevan
+# Install dependencies (first time only)
 npm install
-npm start
+
+# Run the scraper
+npm run scrape
 ```
 
 The scraper will:
 1. Launch a headless browser
-2. Navigate to the store website
-3. Extract product information
-4. Save data to `data/products.json` and `data/products.js`
+2. Extract product information
+3. Save to `stores/nitzat-haduvdevan/data/products.json`
 
-## 🌐 Viewing Results
-
-### Option 1: Online (GitHub Pages)
-Visit: https://lior88844.github.io/weft-scraper/
-
-### Option 2: Local Web Server
-```bash
-# From project root
-python3 -m http.server 8000
-# Open http://localhost:8000/
-```
-
-### Option 3: Open Directly
-Simply open `index.html` in your browser (some features may require a web server)
-
-## 🤖 NEW: ChatGPT Integration (MCP Server)
-
-**Shop with AI!** Browse and order from Weft stores directly through ChatGPT using our MCP server.
+### 2. Deploy to GitHub Pages
 
 ```bash
-cd mcp-server
-python3 test_setup.py  # Test your setup
-python3 server.py      # Start the server
+# Commit the new data
+git add stores/nitzat-haduvdevan/data/products.json
+git commit -m "Update products"
+git push origin main
 ```
 
-**Example ChatGPT conversation:**
+Enable GitHub Pages:
+- Go to **Settings** → **Pages**
+- Source: **main** branch, **`/docs`** folder
+- Your site will be live at: `https://YOUR-USERNAME.github.io/Weft/`
+
+### 3. Deploy MCP to Railway
+
+1. Go to [Railway.app](https://railway.app)
+2. Create **New Project** → **Deploy from GitHub**
+3. Select your Weft repository
+4. Railway auto-deploys! ✨
+
+Configure ChatGPT:
+- URL: `https://your-app.railway.app/mcp`
+
+📖 **Full workflow guide:** [WORKFLOW.md](WORKFLOW.md)
+
+## 👀 Viewing Products
+
+### For Your Team (GitHub Pages)
+**URL:** `https://YOUR-USERNAME.github.io/Weft/`
+
+Features:
+- 🔍 Search products
+- 🏷️ Filter by category
+- 💰 Sort by price
+- 📱 Mobile-friendly
+- 🌐 Hebrew RTL support
+
+### For ChatGPT (Railway MCP)
+**URL:** `https://your-app.railway.app/mcp`
+
+Example prompts:
 - "Show me all quinoa products"
 - "Add organic rice to my cart"
-- "What's in my cart?"
+- "What's cheaper than 20 NIS?"
 
-📖 [Full MCP Server Documentation](mcp-server/README.md)
+### Local Preview (During Development)
+```bash
+npm run serve
+# Open http://localhost:8000
+```
 
-**Requirements:**
-- Python 3.10+ (for fastmcp)
-- ChatGPT Plus account
+## 💰 Cost Breakdown
+
+| Component | Hosting | Cost | Purpose |
+|-----------|---------|------|---------|
+| 🖥️ **Scraping** | Your Computer | **FREE** | Extract product data |
+| 🌐 **Web Viewer** | GitHub Pages | **FREE** | Team product catalog |
+| 🤖 **ChatGPT MCP** | Railway | **$5/month** | AI shopping assistant |
+
+**Total:** **$5/month** (or FREE if you skip ChatGPT integration!)
+
+## 🎯 Why This Architecture?
+
+✅ **No expensive cloud scraping** - Chromium runs locally, not in the cloud  
+✅ **Fast deployments** - No heavy dependencies, builds in seconds  
+✅ **Cost effective** - GitHub Pages is free, Railway is $5/month  
+✅ **Easy updates** - Just run scraper locally and push  
+✅ **Team friendly** - Everyone can view products on GitHub Pages  
+✅ **AI powered** - Optional ChatGPT integration for advanced features
 
 ## 📊 Features
 
