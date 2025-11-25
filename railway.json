@@ -5,8 +5,8 @@
     "watchPatterns": ["mcp-server/**", "nixpacks.toml", "railway.json"]
   },
   "deploy": {
-    "startCommand": "cd mcp-server && python3 server.py",
-    "healthcheckPath": "/",
+    "startCommand": "export PATH=/usr/local/bin:$PATH && cd mcp-server && python3 server.py",
+    "healthcheckPath": "/mcp",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10

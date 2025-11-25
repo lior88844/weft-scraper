@@ -9,5 +9,5 @@ cmds = ["echo 'Skipping npm install'"]
 cmds = ["cd mcp-server && python3 -m pip install --break-system-packages -r requirements.txt"]
 
 [start]
-cmd = "cd mcp-server && python3 server.py"
+cmd = "export PATH=/usr/local/bin:$PATH && cd mcp-server && python3 server.py"
 
