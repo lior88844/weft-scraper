@@ -29,6 +29,7 @@ DEFAULT_STORE = "nitzat-haduvdevan"
 WIDGET_DIR = Path(__file__).parent / "web" / "dist"
 WIDGET_MIME_TYPE = "text/html+skybridge"
 PRODUCTS_WIDGET_URI = "ui://widget/products.html"
+CART_WIDGET_URI = "ui://widget/cart.html"
 
 # In-memory cart storage: {session_id: {product_key: {product, quantity}}}
 user_carts = {}
@@ -111,6 +112,20 @@ async def list_resources() -> List[types.Resource]:
                 "openai/widgetPrefersBorder": True,
                 "openai/widgetDomain": "https://chatgpt.com",
             }
+        ),
+        types.Resource(
+            name="Cart Widget",
+            title="Cart Widget",
+            uri=CART_WIDGET_URI,
+            description="Interactive shopping cart with add/remove items",
+            mimeType=WIDGET_MIME_TYPE,
+            _meta={
+                "openai/outputTemplate": CART_WIDGET_URI,
+                "openai/widgetAccessible": True,
+                "openai/resultCanProduceWidget": True,
+                "openai/widgetPrefersBorder": True,
+                "openai/widgetDomain": "https://chatgpt.com",
+            }
         )
     ]
 
@@ -151,6 +166,39 @@ async def handle_read_resource(req: types.ReadResourceRequest) -> types.ServerRe
         ]
 
         return types.ServerResult(types.ReadResourceResult(contents=contents))
+    
+    elif uri == CART_WIDGET_URI:
+        widget_path = WIDGET_DIR / "cart.html"
+        
+        if not widget_path.exists():
+            logger.error(f"Cart widget not found at: {widget_path}")
+            return types.ServerResult(
+                types.ReadResourceResult(
+                    contents=[],
+                    _meta={"error": f"Widget not found: {widget_path}"}
+                )
+            )
+
+        html_content = widget_path.read_text(encoding="utf-8")
+        logger.info(f"Read cart widget HTML, length: {len(html_content)}")
+
+        contents = [
+            types.TextResourceContents(
+                uri=CART_WIDGET_URI,
+                mimeType=WIDGET_MIME_TYPE,
+                text=html_content,
+                _meta={
+                    "openai/outputTemplate": CART_WIDGET_URI,
+                    "openai/widgetAccessible": True,
+                    "openai/resultCanProduceWidget": True,
+                    "openai/widgetPrefersBorder": True,
+                    "openai/widgetDomain": "https://chatgpt.com",
+                }
+            )
+        ]
+
+        return types.ServerResult(types.ReadResourceResult(contents=contents))
+    
     else:
         return types.ServerResult(
             types.ReadResourceResult(
@@ -230,6 +278,16 @@ async def list_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": {},
                 "required": []
+            },
+            _meta={
+                "openai/outputTemplate": CART_WIDGET_URI,
+                "openai/widgetAccessible": True,
+                "openai/resultCanProduceWidget": True,
+            },
+            annotations={
+                "destructiveHint": False,
+                "openWorldHint": False,
+                "readOnlyHint": True,
             }
         ),
         types.Tool(
@@ -408,32 +466,67 @@ async def add_to_cart(ctx: Context, product_id: str, quantity: int = 1) -> str:
         return f"❌ שגיאה בהוספה לעגלה: {str(e)}"
 
 
-async def view_cart(ctx: Context) -> str:
-    """View cart contents"""
+async def view_cart(ctx: Context) -> types.CallToolResult:
+    """View cart contents with visual widget"""
     session_id = ctx.session_id
     
     if session_id not in user_carts or not user_carts[session_id]:
-        return "העגלה ריקה 🛒"
+        return types.CallToolResult(
+            content=[
+                types.TextContent(
+                    type="text",
+                    text="העגלה ריקה 🛒"
+                )
+            ],
+            structuredContent={"items": [], "total": 0}
+        )
     
-    result = ["🛒 **העגלה שלך:**\n"]
+    items = []
     total = 0
+    text_result = ["🛒 **העגלה שלך:**\n"]
     
     for product_id, item in user_carts[session_id].items():
         product = item['product']
         quantity = item['quantity']
+        store_name = item['store']
         price = float(product['price'])
         line_total = price * quantity
         total += line_total
         
-        result.append(f"• {product['name']}")
-        result.append(f"  כמות: {quantity}")
-        result.append(f"  מחיר ליחידה: {price} ₪")
-        result.append(f"  סה\"כ: {line_total:.2f} ₪")
-        result.append(f"  מזהה: {product_id}\n")
+        # Get product index from product_id (format: "store:index")
+        index = int(product_id.split(':')[1])
+        
+        # Transform product to get proper image URL
+        transformed = transform_product_to_mcp_format(product, index, store_name)
+        
+        # Add to items array for widget
+        items.append({
+            "id": product_id,
+            "name": product['name'],
+            "price": product['price'],
+            "quantity": quantity,
+            "image": transformed['image'],
+            "line_total": line_total
+        })
+        
+        # Build text fallback
+        text_result.append(f"• {product['name']}")
+        text_result.append(f"  כמות: {quantity}")
+        text_result.append(f"  מחיר ליחידה: {price} ₪")
+        text_result.append(f"  סה\"כ: {line_total:.2f} ₪")
+        text_result.append(f"  מזהה: {product_id}\n")
     
-    result.append(f"\n**סה\"כ לתשלום: {total:.2f} ₪**")
+    text_result.append(f"\n**סה\"כ לתשלום: {total:.2f} ₪**")
     
-    return "\n".join(result)
+    return types.CallToolResult(
+        content=[
+            types.TextContent(
+                type="text",
+                text="\n".join(text_result)
+            )
+        ],
+        structuredContent={"items": items, "total": total}
+    )
 
 
 async def remove_from_cart(ctx: Context, product_id: str) -> str:
@@ -515,11 +608,7 @@ async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
             from types import SimpleNamespace
             ctx = SimpleNamespace(session_id=session_id)
             result = await view_cart(ctx)
-            return types.ServerResult(
-                types.CallToolResult(
-                    content=[types.TextContent(type="text", text=result)]
-                )
-            )
+            return types.ServerResult(result)
         
         elif tool_name == "remove_from_cart":
             product_id = arguments.get("product_id")

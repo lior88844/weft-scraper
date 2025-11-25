@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עגלת קניות</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f9fafb;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .cart-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .cart-header {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+            font-size: 18px;
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+
+        .cart-item:hover {
+            background: #f9fafb;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #e5e7eb;
+            flex-shrink: 0;
+        }
+
+        .item-image-placeholder {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            flex-shrink: 0;
+        }
+
+        .item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.4;
+        }
+
+        .item-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: auto;
+            flex-wrap: wrap;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .quantity-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .quantity-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quantity-value {
+            min-width: 32px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .remove-btn {
+            padding: 8px 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #dc2626;
+        }
+
+        .remove-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .cart-summary {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 16px;
+        }
+
+        .summary-total {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            padding: 16px 0;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .checkout-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .clear-cart-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+
+        .clear-cart-btn:hover {
+            background: #e5e7eb;
+        }
+
+        @media (max-width: 640px) {
+            .cart-item {
+                flex-direction: column;
+            }
+            
+            .item-image, .item-image-placeholder {
+                width: 100%;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="cart"></div>
+
+    <script>
+        const getData = () => {
+            if (window.openai?.toolOutput) {
+                console.log('Cart data:', window.openai.toolOutput);
+                return window.openai.toolOutput;
+            }
+            return { items: [], total: 0 };
+        };
+
+        function renderCart() {
+            const data = getData();
+            const cartEl = document.getElementById('cart');
+            
+            if (!data.items || data.items.length === 0) {
+                cartEl.innerHTML = `
+                    <div class="cart-container">
+                        <div class="cart-empty">
+                            🛒<br><br>
+                            העגלה ריקה
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const itemsHTML = data.items.map(item => {
+                const imageHTML = item.image
+                    ? `<img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.outerHTML='<div class=\\'item-image-placeholder\\'>🌾</div>'">`
+                    : `<div class="item-image-placeholder">🌾</div>`;
+
+                return `
+                    <div class="cart-item">
+                        ${imageHTML}
+                        <div class="item-info">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-price">${item.price} ₪ × ${item.quantity} = ${(parseFloat(item.price) * item.quantity).toFixed(2)} ₪</div>
+                            <div class="item-controls">
+                                <div class="quantity-control">
+                                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', ${item.quantity - 1})">−</button>
+                                    <span class="quantity-value">${item.quantity}</span>
+                                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                                </div>
+                                <button class="remove-btn" onclick="removeItem('${item.id}', '${item.name.replace(/'/g, "\\'")}')">הסר</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            cartEl.innerHTML = `
+                <div class="cart-container">
+                    <div class="cart-header">
+                        🛒 עגלת הקניות שלי
+                    </div>
+                    ${itemsHTML}
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>סה"כ פריטים:</span>
+                            <span>${data.items.length}</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span>סה"כ לתשלום:</span>
+                            <span>${data.total.toFixed(2)} ₪</span>
+                        </div>
+                        <button class="checkout-btn" onclick="checkout()">המשך לתשלום</button>
+                        <button class="clear-cart-btn" onclick="clearCart()">רוקן עגלה</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.updateQuantity = async (productId, newQuantity) => {
+            if (newQuantity < 1) {
+                return;
+            }
+            
+            try {
+                if (window.openai?.callTool) {
+                    console.log(`Updating quantity for ${productId} to ${newQuantity}`);
+                    
+                    // Remove item
+                    await window.openai.callTool("remove_from_cart", { product_id: productId });
+                    
+                    // Add back with new quantity
+                    await window.openai.callTool("add_to_cart", { product_id: productId, quantity: newQuantity });
+                    
+                    // Request cart refresh
+                    if (window.openai.sendFollowUpMessage) {
+                        window.openai.sendFollowUpMessage({ prompt: "רענן את העגלה" });
+                    }
+                } else if (window.openai?.sendFollowUpMessage) {
+                    window.openai.sendFollowUpMessage({ 
+                        prompt: `עדכן כמות של מוצר ${productId} ל-${newQuantity}` 
+                    });
+                }
+            } catch (error) {
+                console.error('Error updating quantity:', error);
+            }
+        };
+
+        window.removeItem = async (productId, productName) => {
+            try {
+                if (window.openai?.callTool) {
+                    console.log(`Removing item ${productId}`);
+                    await window.openai.callTool("remove_from_cart", { product_id: productId });
+                    
+                    if (window.openai.sendFollowUpMessage) {
+                        window.openai.sendFollowUpMessage({ 
+                            prompt: `${productName} הוסר מהעגלה` 
+                        });
+                    }
+                } else if (window.openai?.sendFollowUpMessage) {
+                    window.openai.sendFollowUpMessage({ 
+                        prompt: `הסר ${productName} מהעגלה` 
+                    });
+                }
+            } catch (error) {
+                console.error('Error removing item:', error);
+            }
+        };
+
+        window.clearCart = async () => {
+            try {
+                if (window.openai?.callTool) {
+                    console.log('Clearing cart');
+                    await window.openai.callTool("clear_cart", {});
+                    
+                    if (window.openai.sendFollowUpMessage) {
+                        window.openai.sendFollowUpMessage({ 
+                            prompt: "העגלה רוקנה בהצלחה" 
+                        });
+                    }
+                } else if (window.openai?.sendFollowUpMessage) {
+                    window.openai.sendFollowUpMessage({ 
+                        prompt: "רוקן את העגלה" 
+                    });
+                }
+            } catch (error) {
+                console.error('Error clearing cart:', error);
+            }
+        };
+
+        window.checkout = async () => {
+            if (window.openai?.sendFollowUpMessage) {
+                window.openai.sendFollowUpMessage({
+                    prompt: "אני מוכן לסיים את ההזמנה. תן לי סיכום מפורט של ההזמנה שלי."
+                });
+            }
+        };
+
+        // Initial render
+        console.log('Cart widget initialized');
+        renderCart();
+
+        // Poll for data updates
+        let hasRendered = false;
+        const checkForData = setInterval(() => {
+            if (window.openai?.toolOutput) {
+                if (!hasRendered) {
+                    console.log('Cart data received, rendering...');
+                    hasRendered = true;
+                }
+                renderCart();
+            }
+        }, 500);
+    </script>
+</body>
+</html>
+
