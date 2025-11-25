@@ -3,7 +3,7 @@
   "build": {
     "builder": "NIXPACKS",
     "buildCommand": "cd mcp-server && pip install -r requirements.txt",
-    "watchPatterns": ["mcp-server/**"]
+    "watchPatterns": ["mcp-server/**", "nixpacks.toml", "railway.json"]
   },
   "deploy": {
     "startCommand": "cd mcp-server && python server.py",
