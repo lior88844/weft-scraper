@@ -1,12 +1,13 @@
 [phases.setup]
-nixPkgs = ["python310"]
+nixPkgs = []
+aptPkgs = ["python3", "python3-pip"]
 
 [phases.install]
 cmds = ["echo 'Skipping npm install'"]
 
 [phases.build]
-cmds = ["cd mcp-server && pip install -r requirements.txt"]
+cmds = ["cd mcp-server && python3 -m pip install -r requirements.txt"]
 
 [start]
-cmd = "cd mcp-server && python server.py"
+cmd = "cd mcp-server && python3 server.py"
 
