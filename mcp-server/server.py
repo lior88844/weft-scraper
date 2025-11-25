@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-PORT = int(os.getenv("PORT", "8547"))
+PORT = int(os.getenv("PORT", "8080"))
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent

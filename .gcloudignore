@@ -1,0 +1,53 @@
+# Git files
+.git
+.gitignore
+.github/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Documentation (not needed in container)
+*.md
+!mcp-server/README.md
+
+# Railway specific
+railway.json
+nixpacks.toml
+Procfile
+
+# Local scraper files (we only need the data)
+scraper.js
+stores/*/scraper.js
+stores/*/package.json
+stores/*/package-lock.json
+stores/*/README.md
+
+# Only keep the products.json files
+!stores/*/data/products.json
+
