@@ -71,13 +71,13 @@ def transform_product_to_mcp_format(product: Dict, index: int, store_name: str) 
     # Create unique ID combining store name and index
     product_key = f"{store_name}:{index}"
     
-    # Build full image URL from Nitzat Haduvdevan website
+    # Build full image URL from the official store website
     image_url = product.get('image', '')
     if image_url and not image_url.startswith('http'):
         # Remove leading slash if present
         image_url = image_url.lstrip('/')
-        # Construct full URL to Nitzat Haduvdevan website
-        image_url = f"https://www.nitzathaduvdevan.co.il/{image_url}"
+        # Construct full URL to the site's CDN/domain
+        image_url = f"https://www.nizat.com/{image_url}"
     
     return {
         "id": product_key,
