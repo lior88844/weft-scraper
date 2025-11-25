@@ -45,10 +45,10 @@ echo ""
 echo "🏗️  Building and deploying (this will take 2-3 minutes)..."
 echo ""
 
-# Deploy from source
+# Deploy from source (root directory to include stores)
 cd "$(dirname "$0")"
 gcloud run deploy "$SERVICE_NAME" \
-  --source mcp-server \
+  --source . \
   --platform managed \
   --region "$REGION" \
   --allow-unauthenticated \
