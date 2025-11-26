@@ -137,18 +137,22 @@ The MCP server provides these tools to ChatGPT:
 4. **view_cart** - View current cart contents
 5. **remove_from_cart** - Remove an item from cart
 6. **clear_cart** - Clear entire cart
+7. **debug_session** - Display session info and verify cart isolation (debugging tool)
 
 ## 📁 Project Structure
 
 ```
 mcp-server/
-├── server.py              # Main MCP server
-├── requirements.txt       # Python dependencies
-├── chatgpt_config.json    # ChatGPT MCP configuration
+├── server.py                # Main MCP server
+├── requirements.txt         # Python dependencies
+├── chatgpt_config.json      # ChatGPT MCP configuration
+├── test_sessions.py         # Session isolation test script
+├── SESSION_ISOLATION.md     # Detailed session documentation
 ├── web/
 │   └── dist/
-│       └── products.html  # Product display widget
-└── README.md             # This file
+│       ├── products.html    # Product display widget
+│       └── cart.html        # Shopping cart widget
+└── README.md               # This file
 ```
 
 ## 🔧 Configuration
@@ -220,12 +224,67 @@ The `products.json` format:
 3. **Session Management**: Maintains shopping carts per ChatGPT session
 4. **Widget**: Displays products in a beautiful interactive grid
 
+## 🔐 Session Isolation
+
+**Each ChatGPT conversation has its own isolated shopping cart!**
+
+### How it works:
+- Every chat conversation receives a unique session ID from ChatGPT
+- Carts are stored separately per session: `user_carts[session_id]`
+- Items added in Chat A won't appear in Chat B
+- Multiple users can use the server simultaneously without conflicts
+
+### Testing Session Isolation:
+
+**Method 1: Use the Debug Tool**
+```
+You: Run the debug_session tool
+ChatGPT: 🔍 Session Debug Information
+         Current Session ID: `abc123xyz`
+         Items in Your Cart: 2
+         Your Cart Total: 45.80 ₪
+```
+
+**Method 2: Manual Test**
+1. Start Chat A → Add items to cart
+2. Start Chat B (new conversation) → View cart (should be empty!)
+3. Chat B → Add different items
+4. Return to Chat A → View cart (should show original items only)
+
+### Verifying Isolation:
+
+Run the test script:
+```bash
+cd mcp-server
+python test_sessions.py
+```
+
+This will:
+- Simulate two different chat sessions
+- Add items to each cart independently
+- Verify that carts don't overlap
+- Display session IDs and debug info
+
+📖 **See [SESSION_ISOLATION.md](SESSION_ISOLATION.md) for detailed documentation**
+
+### Troubleshooting Sessions:
+
+If all chats share the same cart:
+1. Check server logs for session warnings
+2. Run `debug_session` in different conversations
+3. Verify different session IDs are shown
+4. See SESSION_ISOLATION.md for solutions
+
 ## 🔒 Security Notes
 
 - Server runs locally on your machine
 - No external API calls or data transmission
 - Shopping cart is stored in memory (not persistent)
 - All data stays on your computer
+- **Session Isolation**: Each chat conversation has isolated cart data
+- Sessions are ephemeral (cleared on server restart)
+- No authentication required for local development
+- Consider adding auth for multi-user deployments
 
 ## 📝 Development
 
@@ -267,12 +326,15 @@ ISC - Same as parent Weft project
 
 ## 💡 Future Ideas
 
-- [ ] Persistent cart storage (SQLite)
+- [x] Session isolation per chat conversation
+- [ ] Persistent cart storage (Redis/SQLite)
+- [ ] Session timeout and cleanup
 - [ ] Price tracking over time
 - [ ] Multi-store comparison
 - [ ] Order history
 - [ ] Export shopping list
 - [ ] WhatsApp/Email order links
+- [ ] User authentication for cross-device shopping
 
 ## 👨‍💻 Author
 
