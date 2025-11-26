@@ -226,6 +226,53 @@ async function scrapeNitzatHaduvdevan() {
         const products = await page.evaluate((categoryName) => {
           const extractedProducts = [];
           
+          // Only keep images whose wrapping div has the required ID
+          const getValidImageSrc = (imgElement) => {
+            if (!imgElement || typeof imgElement.closest !== 'function') return null;
+            
+            const wrapper = imgElement.closest('#ContentPlaceHolder1_productpic');
+            const hasRepeaterImageId = typeof imgElement.id === 'string' &&
+              imgElement.id.startsWith('ContentPlaceHolder1_products_rptproducts_imgProductPic');
+            
+            if (!wrapper && !hasRepeaterImageId) return null;
+            
+            const attributeCandidates = [
+              'src',
+              'data-src',
+              'data-lazy-src',
+              'data-original',
+              'data-srcset',
+              'data-lazy',
+              'srcset'
+            ];
+            
+            for (const attr of attributeCandidates) {
+              const value = imgElement.getAttribute(attr);
+              if (value && value.trim() !== '') {
+                return value.trim();
+              }
+            }
+            
+            if (imgElement.dataset) {
+              const datasetKeys = ['src', 'lazySrc', 'original'];
+              for (const key of datasetKeys) {
+                if (imgElement.dataset[key] && imgElement.dataset[key].trim() !== '') {
+                  return imgElement.dataset[key].trim();
+                }
+              }
+            }
+            
+            const style = imgElement.getAttribute('style');
+            if (style) {
+              const urlMatch = style.match(/url\(['"]?([^'")\s]+)['"]?\)/);
+              if (urlMatch && urlMatch[1]) {
+                return urlMatch[1];
+              }
+            }
+            
+            return null;
+          };
+          
           // Try multiple product selectors
           const productSelectors = [
             'tr[id*="rptproducts_tr"]',  // ASP.NET repeater table rows
@@ -258,7 +305,8 @@ async function scrapeNitzatHaduvdevan() {
             productImages.forEach((img, imgIdx) => {
               try {
                 // Get image URL
-                const image = img.getAttribute('src') || img.src;
+                const image = getValidImageSrc(img);
+                if (!image) return;
                 
                 // Find nearest container
                 const container = img.closest('tr, div[class*="product"], div[class*="item"], div[id], td');
@@ -376,17 +424,7 @@ async function scrapeNitzatHaduvdevan() {
                 }
                 
                 if (img) {
-                  image = img.getAttribute('src') ||
-                          img.getAttribute('data-src') ||
-                          img.getAttribute('data-lazy-src') ||
-                          img.getAttribute('data-original') ||
-                          img.dataset.src ||
-                          img.dataset.lazySrc;
-                  
-                  // Convert relative URLs to absolute
-                  if (image && !image.startsWith('http') && !image.startsWith('/')) {
-                    // It's a relative URL, keep it as is (browser will resolve it)
-                  }
+                  image = getValidImageSrc(img);
                 }
                 
                 if (text && !text.includes('בצ') && !text.includes('סגור')) { // Filter out UI text
@@ -439,24 +477,7 @@ async function scrapeNitzatHaduvdevan() {
                 
                 let image = null;
                 if (imageElement) {
-                  // Try multiple image attributes (lazy loading, srcset, etc.)
-                  image = imageElement.getAttribute('src') ||
-                          imageElement.getAttribute('data-src') ||
-                          imageElement.getAttribute('data-lazy-src') ||
-                          imageElement.getAttribute('data-original') ||
-                          imageElement.getAttribute('data-srcset') ||
-                          imageElement.dataset.src ||
-                          imageElement.dataset.lazySrc;
-                  
-                  
-                  // If still no image, check if it's a background image
-                  if (!image) {
-                    const style = imageElement.getAttribute('style');
-                    if (style) {
-                      const urlMatch = style.match(/url\(['"]?([^'")\s]+)['"]?\)/);
-                      if (urlMatch) image = urlMatch[1];
-                    }
-                  }
+                  image = getValidImageSrc(imageElement);
                 }
 
                 

@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node scraper.js",
     "scrape": "node scraper.js",
-    "serve": "npx http-server -p 8000 -o -c-1"
+    "sync-docs": "node scripts/sync-docs.js",
+    "serve": "npm run sync-docs && npx http-server docs -p 8000 -o -c-1",
+    "serve:src": "npx http-server -p 8000 -o -c-1"
   },
   "keywords": [
     "scraper",
