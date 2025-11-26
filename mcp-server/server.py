@@ -311,6 +311,16 @@ async def list_tools() -> List[types.Tool]:
                 "properties": {},
                 "required": []
             }
+        ),
+        types.Tool(
+            name="debug_session",
+            title="Debug Session",
+            description="Show session information for debugging (session ID, cart stats, active sessions)",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         )
     ]
 
@@ -562,6 +572,53 @@ async def clear_cart(ctx: Context) -> str:
     return "✓ העגלה נוקתה"
 
 
+async def debug_session(ctx: Context) -> str:
+    """Debug session information"""
+    session_id = ctx.session_id
+    
+    # Gather session stats
+    total_sessions = len(user_carts)
+    cart = user_carts.get(session_id, {})
+    items_count = len(cart)
+    
+    # Calculate total for this session
+    total = 0
+    if cart:
+        total = sum(
+            float(item['product']['price']) * item['quantity']
+            for item in cart.values()
+        )
+    
+    result = [
+        "🔍 **Session Debug Information**\n",
+        f"**Current Session ID:** `{session_id}`",
+        f"**Total Active Sessions:** {total_sessions}",
+        f"**Items in Your Cart:** {items_count}",
+        f"**Your Cart Total:** {total:.2f} ₪\n"
+    ]
+    
+    # Show other sessions (without exposing their contents)
+    if total_sessions > 1:
+        result.append("**Other Active Sessions:**")
+        for sid in user_carts.keys():
+            if sid != session_id:
+                other_cart_size = len(user_carts[sid])
+                result.append(f"  - Session `{sid[:12]}...`: {other_cart_size} items")
+    elif total_sessions == 1:
+        result.append("**No other active sessions**")
+    else:
+        result.append("**No active sessions (empty carts)**")
+    
+    # Warning if using default session
+    if session_id == "default":
+        result.append("\n⚠️ **WARNING: Using default session!**")
+        result.append("⚠️ This means session isolation is NOT working.")
+        result.append("⚠️ All users are sharing the same cart!")
+        result.append("⚠️ Check server logs for session ID extraction issues.")
+    
+    return "\n".join(result)
+
+
 # Tool call request handler
 async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
     """Route tool calls to appropriate handlers"""
@@ -571,9 +628,36 @@ async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
     logger.info(f"handle_call_tool called: {tool_name}")
     logger.info(f"Arguments: {arguments}")
     
-    # Extract session_id
-    session_id = getattr(req.params, '_meta', {}).get('sessionId') or "default"
-    logger.info(f"Session ID: {session_id}")
+    # Extract session_id - try multiple sources
+    session_id = None
+    
+    # Try to extract from request metadata
+    params_meta = getattr(req.params, '_meta', {})
+    request_meta = getattr(req, '_meta', {})
+    
+    # Log what we received for debugging
+    logger.info(f"Request params._meta: {params_meta}")
+    logger.info(f"Request._meta: {request_meta}")
+    
+    # Try multiple potential session ID locations
+    session_id = (
+        params_meta.get('sessionId') or
+        params_meta.get('conversationId') or
+        params_meta.get('session_id') or
+        request_meta.get('sessionId') or
+        request_meta.get('conversationId') or
+        arguments.get('_sessionId')  # Sometimes in arguments
+    )
+    
+    if session_id:
+        logger.info(f"✓ Using session ID: {session_id}")
+    else:
+        logger.warning("⚠️ No session ID provided by client!")
+        logger.warning("⚠️ Using fallback session ID: default")
+        logger.warning("⚠️ This means all users will share the same cart!")
+        session_id = "default"
+    
+    logger.info(f"Final Session ID: {session_id}")
     
     try:
         if tool_name == "list_stores":
@@ -625,6 +709,16 @@ async def handle_call_tool(req: types.CallToolRequest) -> types.ServerResult:
             from types import SimpleNamespace
             ctx = SimpleNamespace(session_id=session_id)
             result = await clear_cart(ctx)
+            return types.ServerResult(
+                types.CallToolResult(
+                    content=[types.TextContent(type="text", text=result)]
+                )
+            )
+        
+        elif tool_name == "debug_session":
+            from types import SimpleNamespace
+            ctx = SimpleNamespace(session_id=session_id)
+            result = await debug_session(ctx)
             return types.ServerResult(
                 types.CallToolResult(
                     content=[types.TextContent(type="text", text=result)]
